@@ -1,0 +1,56 @@
+version: '3'
+services:
+  db:
+    container_name: db
+    image: postgres
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+    environment:
+      - POSTGRES_USER=${DATABASE_USERNAME}
+      - POSTGRES_DATABASE=${DATABASE_NAME}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    ports:
+      - 5433:5432
+    networks:
+      - app-network
+
+  back:
+    container_name: back
+    depends_on:
+      - db
+    build:
+      context: ./back
+    ports:
+      - "1337:1337"
+    env_file:
+      - .env
+    volumes:
+       - ./back:/usr/src/app/back
+      #  - ./back/node_modules:/usr/src/app/back/node_modules
+       - /usr/src/app/back/node_modules
+    networks:
+      - app-network
+
+  blog:
+    container_name: blog
+    depends_on: 
+      - back
+    build:
+      context: ./blog
+    ports:
+      - "8080:3000"
+    volumes:
+      - ./blog:/usr/src/app/blog
+      # - ./blog/node_modules:/usr/src/app/blog/node_modules
+      - /usr/src/app/blog/node_modules
+    networks:
+      - app-network
+
+volumes:
+  db_data: {}
+
+networks:
+  app-network:
+    driver: bridge
